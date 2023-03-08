@@ -6,68 +6,87 @@ Implementation of a priority queue.
 class SimplePriorityQueue():
     """A simple priority queue to process work items.
 
-    Starting at the most granular level,
-    each work item is a dictionary contains two keys:
-        priority (int): Priority level from 0 to 10, 10 is highest priority.
-        command (str): The command to be executed.
+    Description of Data Structures Used:
+        Starting at the most granular level,
+        each work item is a dictionary contains two keys:
+            priority (int): Priority level from 0 to 10,
+                where 10 is the highest priority level.
+            command (str): The command to be executed.
 
-    Example of a work item:
-        work_item = {"priority": 1, "command": "dir C:/"}
+        Example of a work item:
+            work_item = {"priority": 1, "command": "dir C:/"}
 
-    The incoming stream is a list of work items, processed from the front.
+        The incoming stream is a list of work items,
+        processed starting from the front.
 
-    Example of the incoming stream:
-        incoming_stream = [
-            {"priority": 1, "command": "dir C:/one"},
-            {"priority": 10, "command": "dir C:/three"},
-            {"priority": 1, "command": "dir C:/two"}
-        ]
-
-    Now, the priority queue is implemented as a dictionary of 11 lists.
-    Each list would hold all the work items for one the priority levels
-    from 0 to 10, in the order received, with the earliest item at the front.
-
-    Example of the priority queue:
-        priority_queue = {
-            0: [],
-            1: [
-                {"priority": 1, "command": "dir C:/one},
-                {"priority": 1, "command": "dir C:/two}
-            ],
-            ...,
-            10: [
-                {"priority": 10, "command": "dir C:/three"}
+        Example of the incoming stream:
+            incoming_stream = [
+                {"priority": 1, "command": "dir C:/one"},
+                {"priority": 10, "command": "dir C:/three"},
+                {"priority": 1, "command": "dir C:/two"}
             ]
-        }
 
-    To see the simple priority queue in action,
-    first, we begin by ingesting a raw stream of work items.
-    Second, we cleanse the incoming stream of invalid work items.
-    Thirdly, we move work items from the (cleansed) incoming stream to the
-    priority queue until the incoming stream is empty.
+        Now, the priority queue is implemented as a dictionary of 11 lists.
+        Each list would hold all the work items for one the priority levels
+        from 0 to 10, in the order received, with the earliest item at the
+        front.
 
-    Finally, each work item in priority queue is processed, starting at the
-    highest priority level.
-    When a work item is processed, the command is echoed to the standard
-    output.
+        Example of the priority queue:
+            priority_queue = {
+                0: [],
+                1: [
+                    {"priority": 1, "command": "dir C:/one},
+                    {"priority": 1, "command": "dir C:/two}
+                ],
+                ...,
+                10: [
+                    {"priority": 10, "command": "dir C:/three"}
+                ]
+            }
+
+    How The Process Operates:
+        To see the simple priority queue in action, we use 3 functions.
+
+        First, we begin by using ingest_raw_stream() to ingest all the work
+        items in the given raw stream (list).
+        As we ingest each work item, "invalid" work items are removed.
+
+        Secondly, we use move_items_from_stream_to_priority_queue() to move
+        either all or a given number of work items from the incoming stream
+        to the priority queue, which is sorted by priority
+        level.
+
+        Finally, we use process_priority_queue() to process either all or a
+        given number of work items in the priority queue.  It starts
+        processing with the work item with the highest priority level.
+
+        Items of the same priority level are processed in the order received.
+        When a work item is processed, the command is echoed to the standard
+        output.
     """
 
     def __init__(self):
         self.priority_queue = {}
-        self.stream = []
+        self.incoming_stream = []
+        self.initialize_priority_queue()
 
     def initialize_priority_queue(self):
         """Initializes each list in the priority queue to the empty list."""
-        for i in range(0, 11):
-            self.priority_queue[i] = []
+        for index in range(0, 11):
+            self.priority_queue[index] = []
 
-    def ingest_stream(self, stream):
-        """Ingest the incoming stream, which is a list of work items.
+    def ingest_raw_stream(self, stream):
+        """Copy each item from the front of the given stream argument
+            and append it to the back of the incoming stream.
 
         Args:
             stream (list of dicts): List of work items.
         """
-        self.stream = stream
+        while len(stream) > 0:
+            item = stream.pop(0)
+            item = self.cleanse_item(item)
+            if item:
+                self.incoming_stream.append(item)
 
     def pop_stream(self):
         """Pop the next item from the front of the incoming stream.
@@ -77,17 +96,14 @@ class SimplePriorityQueue():
             Otherwise, return an empty dictionary.
         """
         result = {}
-        if len(self.stream) != 0:
-            result = self.stream[0]
-            del self.stream[0]
+        if len(self.incoming_stream) != 0:
+            result = self.incoming_stream[0]
+            del self.incoming_stream[0]
         return result
 
     def push_priority_queue(self, item):
-        """Insert an item into the priority queue according
-        to its priority level.
-
-        New items of the same priority level are inserted
-        at the back of the queue of their priority level.
+        """Append the given item to the back of the priority queue according
+            to its priority level.
 
         Args:
             item (dict): A work item as described in the class description.
@@ -98,7 +114,7 @@ class SimplePriorityQueue():
         """Pop the highest priority level work item from the priority queue.
 
         Returns:
-            item (dict): A work item (as defined in the class description).
+            item (dict): A work item as defined in the class description.
             Otherwise, an empty dictionary.
         """
         for priority_queue_number in reversed(range(0, 11)):
@@ -119,53 +135,65 @@ class SimplePriorityQueue():
         if command:
             print(f">>>     Executing command: {command}")
 
-    def cleanse_stream(self, stream):
-        """Remove invalid work items from the stream.
+    def cleanse_item(self, item):
+        """Return the work item if it is valid,
+            otherwise return an empty dictionary.
+
+        A valid work item contains the key "command", "priority",
+        and the priority is a number from 0 to 10.
 
         Args:
-            stream (list of dicts)
+            item (dict): A work item as described in the class description.
 
         Returns:
-            A list of dictionaries with valid work items.
+            The work item if it is valid.
             Otherwise, return an empty dictionary.
 
-        Note:
-            While iterating over the stream list,
-            to prevent breaking the association of the index to the element,
-            we process the list starting from the back.
-            This allows us to delete the element if it is invalid while still
-            maintaining the index to element association as we proceed to the
-            front of the list.
         """
-        for index in reversed(range(len(stream))):
-            item = stream[index]
-            if "priority" not in item \
-                    or "command" not in item \
-                    or item.get("priority") \
-                    not in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
-                del stream[index]
-                continue
+        if "priority" not in item \
+                or "command" not in item \
+                or item.get("priority") \
+                not in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
+            item = {}
 
-        return stream
+        return item
 
-    def process_priority_queue(self):
-        """Process each work item in priority queue in order of priority level.
+    def move_items_from_stream_to_priority_queue(self, num_items=None):
+        """Pop the given number of work items from the incoming stream and
+            push it to the priority queue.
+
+        Args:
+            num_items (int): Number of work items to process from the
+                the incoming stream, where None indicates to process all
+                the work items in the incoming stream.
         """
-        print(">>>")
-        print(">>> Begin processing of Simple Priority Queue.")
-        self.initialize_priority_queue()
+        if num_items is not None and num_items < 1:
+            return
 
-        # Pop each work item from the incoming stream and
-        # push it into the priority queue.
-        while len(self.stream) != 0:
+        if num_items is None:
+            num_items = len(self.incoming_stream)
+
+        while len(self.incoming_stream) != 0 and num_items > 0:
             self.push_priority_queue(self.pop_stream())
+            num_items -= 1
 
-        # Pop the highest priority level work item from the priority queue and
-        # process it.
+    def process_priority_queue(self, num_items=None):
+        """Process the given number of work items in priority queue
+            starting with the work item with the highest priority level.
+
+        Args:
+            num_items (int): Number of work items to process in the
+                the priority queue, where None indicates to process all
+                the work items in the priority queue.
+        """
+        if num_items is not None and num_items < 1:
+            return
+
+        if num_items is None:
+            num_items = len(self.priority_queue)
+
         next_item = self.pop_priority_queue()
-        while next_item:
+        while next_item and num_items > 0:
             self.execute_work_item(next_item)
             next_item = self.pop_priority_queue()
-
-        print(">>> End of Processing Simple Priority Queue.")
-        print(">>>")
+            num_items -= 1
