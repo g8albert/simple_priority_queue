@@ -4,7 +4,7 @@
 ## Table of Contents
 * [Description](#description)
 * [Features](#features)
-* [Setup](#setup)
+* [Environment](#environment)
 * [Usage](#usage)
 * [Room for Improvement](#room-for-improvement)
 * [Author](#author)
